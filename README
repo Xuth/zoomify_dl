@@ -1,0 +1,65 @@
+zoomify_dl
+Author: Xuth (Jim Leonard)
+
+zoomify_dl is a perl script to download and assemble images that have been cut up to be viewed online using the "Zoomify" flash plugin. Then the image can be viewed (or manipulated) locally rather than tediously online (or not at all if the Zoomify viewer doesn't work in your browser).
+
+zoomify_dl is relatively full featured in that it supports:
+
+    * Downloading any of the saved zoom levels of the image.
+    * Downloading only a section/crop of the image.
+    * Finding Zoomified image paths in html pages including recursive page searches.
+    * Displaying information about a zoomified image without downloading.
+
+Requirements
+
+zoomify_dl requires a reasonably recent version of Perl (I wrote this using 5.10) along with the PerlMagick module (a wrapper around ImageMagick). The amount of ram or disk space that ImageMagick needs is a function of how large an image you're trying to download. The -m option to restrict memory usage is very useful for larger images. This will cause ImageMagick to use a disk buffer which is relatively fast for the block operations being done. Note: On errors this buffer which is created in your temp directory (/tmp on *nix) might not be deleted and can be fairly huge.
+Usage
+
+The basic usage is just:
+
+perl zoomify_dl.pl http://example.com/d/images/zoomify/bigpicture5/
+
+The problem with this is that you have to dig through html pages to find the url which will be in an embedded object. Something like:
+
+<div class="data">
+      <OBJECT CLASSID="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" CODEBASE="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,40,0" HEIGHT="100%" WIDTH="100%" ID="zoomifyObject">
+                <PARAM NAME="FlashVars" VALUE="zoomifyImagePath=/d/images/zoomify/bigpicture5/">
+                <PARAM NAME="MENU" VALUE="FALSE">
+                <PARAM NAME="SRC" VALUE="/z/zoomify/zoomifyViewer.swf">
+                <EMBED FlashVars="zoomifyImagePath=/d/images/zoomify/bigpicture5/" SRC="/z/zoomify/zoomifyViewer.swf" MENU="false" PLUGINSPAGE="http://www.macromedia.com/shockwave/download/index.cgi?P1_Prod_Version=ShockwaveFlash"  WIDTH="100%" HEIGHT="100%" NAME="theMovie"></EMBED>
+              </OBJECT>
+</div>
+
+From this we want the value after "zoomifyImagePath=". Note that this can be a relative URL so you'll also need to make it an absolute url. To get around this you can (in most cases) specify an html page that has a Zoomified image embedded in it and use the -r (recursive) option like this:
+
+perl zoomify_dl.pl -r http://example.com/d/images/bigpicture5.html
+
+Before we download a large image we might wish to see how large it is and if we might want to download a smaller version. To do with we use the -d (display) and -n (no download) options like this:
+
+perl zoomify_dl.pl -r -d -n http://example.com/d/images/bigpicture5.html
+
+which would return:
+
+processing http://example.com/d/images/zoomify/bigpicture5/
+width: 12568
+height: 16776
+numtiles: 4438
+numimages: 1
+version: 1.8
+tilesize: 256
+zlmax: 7
+dimensions zoomlevel: (pixels width, height, tiles width, height)
+   0: (99, 132, 1, 1)
+   1: (197, 263, 1, 2)
+   2: (393, 525, 2, 3)
+   3: (786, 1049, 4, 5)
+   4: (1571, 2097, 7, 9)
+   5: (3142, 4194, 13, 17)
+   6: (6284, 8388, 25, 33)
+   7: (12568, 16776, 50, 66)
+
+This tells us (among other things) that the image url is "http://example.com/d/images/zoomify/bigpicture5/", that the image is 12568 pixels wide by 16776 pixels high and has 7 different zoom levels that can be downloaded. Let's say that we don't need that resolution and that zoom level 4 (1571x2097) is adequate. We can use the -z (zoom level) option like this:
+
+perl zoomify_dl.pl -z4 http://example.com/d/images/zoomify/bigpicture5/
+
+There are several more options to handle recursive searches, downloading crops of the images, saving individual tiles, etc that are covered in the help page. This can be seen with the -h (help) option. 
