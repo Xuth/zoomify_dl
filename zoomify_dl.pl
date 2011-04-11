@@ -357,25 +357,31 @@ sub get_ImageProperties {
     $ip{tilesize} = $1;
 
 	
-
+    # apparently we were calculating sizes wrong.  zoomify expects you to round down.
+    # ie an image 513 pixels wide would only need 2 zoom levels rather than 3
     my $w = $ip{width};
     my $h = $ip{height};
     
     my $m = 1;  # multiple 
     my $l = 0;  # zoom level
-    while (($m * 256 < $w) || ($m * 256 < $h)) {
-	$m *= 2;
+    while (($w > 256) || ($h > 256)) {
+	$w = floor($w / 2);
+	$h = floor($h / 2);
 	$l++;
+	$m *= 2;
     }
-
+    
+    $w = $ip{width};
+    $h = $ip{height};
+    
     my @zoomlevel;
     my $tiles = 0;
 
     for (my $curl = 0; $curl <= $l; ++$curl) {
-	my $tw = ceil($w / ($m * 256));
-	my $th = ceil($h / ($m * 256));
-	my $pw = ceil($w / $m);
-	my $ph = ceil($h / $m);
+	my $pw = floor($w / $m);
+	my $ph = floor($h / $m);
+	my $tw = ceil($pw / 256);
+	my $th = ceil($ph / 256);
 	$zoomlevel[$curl] = [$tw, $th, $tiles, $pw, $ph];
 	$tiles += $tw * $th;
 	$m /= 2;
